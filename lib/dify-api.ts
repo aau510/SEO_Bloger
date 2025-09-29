@@ -186,7 +186,7 @@ export async function generateSEOBlogWithDify(
     onProgress?.('process')
 
     // 调用Dify工作流
-    const response = await difyClient.post('/workflows/run', request)
+    const response = await difyClient.post('', request)
     
     onProgress?.('receive')
     
