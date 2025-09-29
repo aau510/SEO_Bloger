@@ -5,14 +5,15 @@ const nextConfig = {
   },
   // Netlify 优化配置
   trailingSlash: false,
-  // 移除 output: 'standalone' - Netlify不需要
-  distDir: '.next',
-  // 确保静态导出正确
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // 确保API路由正确处理
+  experimental: {
+    // 移除appDir，使用默认配置
   },
 }
 

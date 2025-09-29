@@ -11,6 +11,16 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+[[redirects]]
+  from = "/api/dify-proxy"
+  to = "/.netlify/functions/dify-proxy"
+  status = 200
+
+[[redirects]]
+  from = "/api/scrape-content"
+  to = "/.netlify/functions/scrape-content"
+  status = 200
+
 [[headers]]
   for = "/api/*"
   [headers.values]
@@ -26,5 +36,5 @@
     X-Content-Type-Options = "nosniff"
 
 [functions]
-  directory = ".netlify/functions"
+  directory = "netlify/functions"
   node_bundler = "esbuild"
