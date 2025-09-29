@@ -146,7 +146,89 @@ export async function analyzeUrl(url: string, subpage: string): Promise<UrlAnaly
 }
 
 /**
- * 调用Dify工作流生成SEO博客（带进度回调）
+ * 直接连接Dify工作流生成SEO博客（绕过代理）
+ */
+export async function generateSEOBlogWithDifyDirect(
+  url: string,
+  filteredKeywords: KeywordData[],
+  onProgress?: (step: string, data?: any) => void
+): Promise<string> {
+  try {
+    onProgress?.('prepare', { url, Keywords: filteredKeywords })
+    
+    // 第一步：抓取网站内容
+    onProgress?.('scraping', { url })
+    const urlContent = await scrapeUrlContent(url)
+    const formattedUrlContent = formatUrlContentForDify(urlContent)
+    
+    console.log(`📊 直接连接 - 内容准备完成: markdown=${urlContent.markdown?.length || 0}字符, text=${urlContent.text?.length || 0}字符`)
+    
+    // 准备关键词数据
+    const keywordsData = filteredKeywords.map(k => ({
+      keyword: k.keyword,
+      difficulty: k.difficulty,
+      traffic: k.traffic,
+      volume: k.volume
+    }))
+
+    onProgress?.('send', { url_content: formattedUrlContent, Keywords: keywordsData })
+
+    // 构建Dify API请求
+    const request: DifyApiRequest = {
+      inputs: {
+        url_content: formattedUrlContent,
+        Keywords: JSON.stringify(keywordsData)
+      },
+      response_mode: 'blocking',
+      user: 'seo-blog-agent-direct',
+      conversation_id: ''
+    }
+
+    onProgress?.('process')
+
+    // 直接调用Dify API (不通过代理)
+    const DIFY_DIRECT_URL = 'http://47.90.156.219/v1'
+    const DIFY_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQSV9BdDv6uuu'
+    
+    console.log('🔗 直接连接Dify API:', `${DIFY_DIRECT_URL}/workflows/run`)
+    
+    const response = await axios.post(`${DIFY_DIRECT_URL}/workflows/run`, request, {
+      headers: {
+        'Authorization': `Bearer ${DIFY_TOKEN}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'SEO-Blog-Agent-Direct/1.0',
+      },
+      timeout: 180000, // 3分钟超时
+      validateStatus: () => true
+    })
+    
+    onProgress?.('receive')
+    
+    console.log('📊 直接连接响应:', response.status, response.statusText)
+    
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`Dify API错误: ${response.status} ${response.statusText}`)
+    }
+    
+    let result = ''
+    if (response.data && response.data.data && response.data.data.outputs) {
+      result = response.data.data.outputs.seo_blog || response.data.data.outputs.answer || ''
+    }
+    
+    // 直接返回Dify的原始输出
+    onProgress?.('display', result)
+    return result
+    
+  } catch (error) {
+    console.error('Dify直接连接失败:', error)
+    onProgress?.('error', error instanceof Error ? error.message : 'API直接连接失败')
+    
+    throw error
+  }
+}
+
+/**
+ * 调用Dify工作流生成SEO博客（通过代理，带进度回调）
  */
 export async function generateSEOBlogWithDify(
   url: string,

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { KeywordData, KeywordFilter } from '@/types/dify'
-import { parseKeywordsFromExcel, filterKeywords, generateSEOBlogWithDify, generateSEOBlogWithDifyStream, analyzeUrl } from '@/lib/dify-api'
+import { parseKeywordsFromExcel, filterKeywords, generateSEOBlogWithDify, generateSEOBlogWithDifyDirect, generateSEOBlogWithDifyStream, analyzeUrl } from '@/lib/dify-api'
 import KeywordFilterComponent from './KeywordFilter'
 import WorkflowProgress from './WorkflowProgress'
 import BlogResultDisplay from './BlogResultDisplay'
@@ -39,6 +39,7 @@ export default function DifyWorkflowForm({ onBlogGenerated }: DifyWorkflowFormPr
     stepData: null as any
   })
   const [useStreaming, setUseStreaming] = useState(false)
+  const [connectionMode, setConnectionMode] = useState<'proxy' | 'direct'>('proxy') // 连接方式选择
   const [generatedBlog, setGeneratedBlog] = useState<string>('')
 
   // 处理文件上传
@@ -126,20 +127,38 @@ export default function DifyWorkflowForm({ onBlogGenerated }: DifyWorkflowFormPr
           }
         )
       } else {
-        // 使用阻塞式API
-        blog = await generateSEOBlogWithDify(
-          formData.url,
-          filteredKeywords,
-          (step, data) => {
-            console.log('工作流步骤:', step, data)
-            // 更新真实进度
-            setWorkflowProgress(prev => ({
-              ...prev,
-              currentStep: step,
-              stepData: data
-            }))
-          }
-        )
+        // 根据连接方式选择API
+        if (connectionMode === 'direct') {
+          console.log('🔗 使用直接连接模式')
+          blog = await generateSEOBlogWithDifyDirect(
+            formData.url,
+            filteredKeywords,
+            (step, data) => {
+              console.log('直接连接工作流步骤:', step, data)
+              // 更新真实进度
+              setWorkflowProgress(prev => ({
+                ...prev,
+                currentStep: step,
+                stepData: data
+              }))
+            }
+          )
+        } else {
+          console.log('🔄 使用代理连接模式')
+          blog = await generateSEOBlogWithDify(
+            formData.url,
+            filteredKeywords,
+            (step, data) => {
+              console.log('代理连接工作流步骤:', step, data)
+              // 更新真实进度
+              setWorkflowProgress(prev => ({
+                ...prev,
+                currentStep: step,
+                stepData: data
+              }))
+            }
+          )
+        }
       }
       
       setWorkflowProgress(prev => ({
@@ -450,6 +469,44 @@ export default function DifyWorkflowForm({ onBlogGenerated }: DifyWorkflowFormPr
               <label htmlFor="useStreaming" className="ml-2 text-sm text-gray-700">
                 启用流式输出（实时显示生成过程）
               </label>
+            </div>
+
+            {/* 连接方式选择 */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-900 mb-3">连接方式选择</h4>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="proxy-mode"
+                    name="connectionMode"
+                    value="proxy"
+                    checked={connectionMode === 'proxy'}
+                    onChange={(e) => setConnectionMode(e.target.value as 'proxy' | 'direct')}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                  />
+                  <label htmlFor="proxy-mode" className="ml-2 text-sm text-blue-800">
+                    <span className="font-medium">代理连接</span> - 通过Netlify Functions（推荐，解决跨域问题）
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="direct-mode"
+                    name="connectionMode"
+                    value="direct"
+                    checked={connectionMode === 'direct'}
+                    onChange={(e) => setConnectionMode(e.target.value as 'proxy' | 'direct')}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                  />
+                  <label htmlFor="direct-mode" className="ml-2 text-sm text-blue-800">
+                    <span className="font-medium">直接连接</span> - 绕过代理直接连接Dify API（本地开发用）
+                  </label>
+                </div>
+              </div>
+              <p className="text-xs text-blue-600 mt-2">
+                💡 生产环境建议使用代理连接，本地开发可以尝试直接连接
+              </p>
             </div>
 
             <div className="flex justify-between">
