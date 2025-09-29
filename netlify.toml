@@ -5,30 +5,20 @@
 [build.environment]
   NEXT_PUBLIC_API_BASE_URL = "/api/dify-proxy"
   API_AUTHORIZATION_TOKEN = "app-EVYktrhqnqncQSV9BdDv6uuu"
-  NEXT_PUBLIC_SITE_NAME = "SEO博客智能体"
-  NEXT_PUBLIC_SITE_DESCRIPTION = "基于Dify工作流的智能SEO博客生成系统"
+  NEXT_PUBLIC_SITE_NAME = "SEO Blog Agent"
+  NEXT_PUBLIC_SITE_DESCRIPTION = "AI-powered SEO blog generation system"
 
-# Next.js specific settings - 必须在最前面
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# API路由重定向
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-# SPA fallback for client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}
-
-# 默认重定向到首页
-[[redirects]]
-  from = "/*"
-  to = "/"
   status = 200
 
 [[headers]]
@@ -48,5 +38,3 @@
 [functions]
   directory = ".netlify/functions"
   node_bundler = "esbuild"
-  # 增加函数超时时间 (免费版最大26秒)
-  timeout = 26
