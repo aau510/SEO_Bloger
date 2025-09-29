@@ -353,28 +353,29 @@ export default function WorkflowProgress({
                         </div>
                       )}
 
-                      {/* Dify API 原始错误详情 */}
-                      {step.data.details && step.data.details.dify_status && (
+                      {/* 47.90.156.219 原始错误详情 */}
+                      {step.data.details && step.data.details.dify_original_response && (
                         <div className="border-t border-red-200 pt-3">
-                          <h6 className="font-medium text-red-700 mb-2">🔥 Dify API 原始错误:</h6>
+                          <h6 className="font-medium text-red-700 mb-2">🔥 47.90.156.219 原始错误响应:</h6>
                           <div className="bg-red-100 p-2 rounded text-red-800 space-y-1">
-                            <div><strong>Dify状态码:</strong> {step.data.details.dify_status}</div>
-                            <div><strong>Dify状态文本:</strong> {step.data.details.dify_statusText}</div>
-                            <div><strong>Dify API URL:</strong> {step.data.details.dify_url}</div>
-                            {step.data.details.dify_response && (
+                            <div><strong>状态码:</strong> {step.data.details.dify_status}</div>
+                            <div><strong>状态文本:</strong> {step.data.details.dify_statusText}</div>
+                            <div><strong>源地址:</strong> {step.data.details.dify_url}</div>
+                            
+                            <div className="mt-3 p-3 bg-red-200 rounded">
+                              <h6 className="font-medium text-red-800 mb-2">🎯 47.90.156.219 原始响应数据:</h6>
+                              <pre className="text-xs overflow-x-auto whitespace-pre-wrap bg-red-300 p-2 rounded">
+                                {JSON.stringify(step.data.details.dify_original_response, null, 2)}
+                              </pre>
+                            </div>
+                            
+                            {step.data.details.proxy_headers && (
                               <details className="mt-2">
-                                <summary className="cursor-pointer font-medium">🎯 Dify API 原始响应数据</summary>
-                                <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap bg-red-200 p-2 rounded">
-                                  {JSON.stringify(step.data.details.dify_response, null, 2)}
-                                </pre>
-                              </details>
-                            )}
-                            {step.data.details.dify_headers && (
-                              <details className="mt-2">
-                                <summary className="cursor-pointer font-medium">Dify 响应头</summary>
-                                <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap">
-                                  {JSON.stringify(step.data.details.dify_headers, null, 2)}
-                                </pre>
+                                <summary className="cursor-pointer font-medium">代理信息</summary>
+                                <div className="mt-1 text-xs space-y-1">
+                                  <div><strong>源地址:</strong> {step.data.details.proxy_headers['X-Dify-Source']}</div>
+                                  <div><strong>代理时间:</strong> {step.data.details.proxy_headers['X-Proxy-Timestamp']}</div>
+                                </div>
                               </details>
                             )}
                           </div>

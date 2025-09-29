@@ -34,24 +34,26 @@ export async function POST(request: NextRequest) {
     console.log('   响应状态:', response.status, response.statusText)
     
     if (response.status < 200 || response.status >= 300) {
-      console.error('❌ Dify API原始错误:', response.status, response.statusText, response.data)
+      console.error('❌ Dify API原始错误 (47.90.156.219):', response.status, response.statusText, response.data)
       
-      // 完整透传 Dify API 的原始错误信息
-      const difyError = {
-        error: 'Dify API原始错误',
-        dify_status: response.status,
-        dify_statusText: response.statusText,
-        dify_url: `${DIFY_API_BASE_URL}/workflows/run`,
-        dify_response: response.data, // 完整的 Dify 响应数据
-        dify_headers: response.headers,
-        proxy_info: {
-          message: '这是来自 Dify API 服务器的原始错误响应',
-          timestamp: new Date().toISOString(),
-          proxy_url: '/api/dify-proxy'
+      // 直接透传 47.90.156.219 的原始错误响应，不做任何包装
+      // 只在控制台记录代理信息，但响应体完全是原始的
+      console.log('🔄 代理透传原始错误:', {
+        source: '47.90.156.219/v1/workflows/run',
+        status: response.status,
+        statusText: response.statusText,
+        timestamp: new Date().toISOString()
+      })
+      
+      return NextResponse.json(response.data, { 
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Dify-Source': '47.90.156.219/v1/workflows/run',
+          'X-Proxy-Timestamp': new Date().toISOString()
         }
-      }
-      
-      return NextResponse.json(difyError, { status: response.status })
+      })
     }
     
     // 获取响应数据
@@ -94,35 +96,37 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 构建包含原始错误的详细信息
-    const networkError = {
-      error: 'Dify API网络连接错误',
-      network_error: {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        // 如果是 axios 错误，提取更多信息
+    // 直接透传网络错误，模拟 47.90.156.219 可能返回的错误格式
+    console.error('❌ 网络连接到 47.90.156.219 失败:', error)
+    console.log('🔄 代理透传网络错误:', {
+      target: '47.90.156.219/v1/workflows/run',
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    })
+    
+    // 构建类似 Dify API 可能返回的错误格式
+    const networkErrorResponse = {
+      error: error instanceof Error ? error.message : 'Network connection failed',
+      message: `Failed to connect to Dify API server at 47.90.156.219`,
+      code: error && typeof error === 'object' && 'code' in error ? (error as any).code : 'NETWORK_ERROR',
+      details: {
+        target: '47.90.156.219/v1/workflows/run',
         ...(error && typeof error === 'object' && 'code' in error ? {
-          code: (error as any).code,
           errno: (error as any).errno,
-          syscall: (error as any).syscall,
-          hostname: (error as any).hostname,
-          port: (error as any).port
+          syscall: (error as any).syscall
         } : {})
-      },
-      dify_target: {
-        url: `${DIFY_API_BASE_URL}/workflows/run`,
-        method: 'POST',
-        timeout: 180000
-      },
-      proxy_info: {
-        message: '这是连接到 Dify API 服务器时发生的网络错误',
-        timestamp: new Date().toISOString(),
-        proxy_url: '/api/dify-proxy'
       }
     }
     
-    return NextResponse.json(networkError, { status: statusCode })
+    return NextResponse.json(networkErrorResponse, { 
+      status: statusCode,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Dify-Source': '47.90.156.219/v1/workflows/run',
+        'X-Proxy-Timestamp': new Date().toISOString(),
+        'X-Error-Type': 'network'
+      }
+    })
   }
 }
 

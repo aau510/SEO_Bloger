@@ -6,14 +6,51 @@ import { scrapeUrlContent, formatUrlContentForDify } from './url-scraper'
 const DIFY_API_BASE_URL = '/api/dify-proxy'
 const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQSV9BdDv6uuu'
 
-// 创建Dify API客户端 - 使用代理
-const difyClient = axios.create({
+// Dify API 基础配置
+const DIFY_REQUEST_CONFIG = {
   baseURL: DIFY_API_BASE_URL,
-  timeout:  1000 * 180,
+  timeout: 1000 * 180,
   headers: {
     'Content-Type': 'application/json',
   },
-})
+}
+
+// 使用 fetch 替代 axios 进行 API 调用
+async function difyFetch(url: string, options: RequestInit = {}) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), DIFY_REQUEST_CONFIG.timeout)
+  
+  try {
+    const response = await fetch(`${DIFY_REQUEST_CONFIG.baseURL}${url}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        ...DIFY_REQUEST_CONFIG.headers,
+        ...options.headers,
+      },
+    })
+    
+    clearTimeout(timeoutId)
+    
+    const data = await response.json()
+    
+    if (!response.ok) {
+      const error = new Error(`HTTP ${response.status}: ${response.statusText}`)
+      ;(error as any).response = {
+        status: response.status,
+        statusText: response.statusText,
+        data: data,
+        headers: Object.fromEntries(response.headers.entries())
+      }
+      throw error
+    }
+    
+    return { data }
+  } catch (error) {
+    clearTimeout(timeoutId)
+    throw error
+  }
+}
 
 /**
  * 解析Excel文件中的关键词数据
@@ -268,8 +305,11 @@ export async function generateSEOBlogWithDify(
 
     onProgress?.('process')
 
-    // 调用Dify工作流
-    const response = await difyClient.post('', request)
+    // 调用Dify工作流 - 使用 fetch
+    const response = await difyFetch('', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
     
     onProgress?.('receive')
     
@@ -302,68 +342,33 @@ export async function generateSEOBlogWithDify(
       }
       detailedError.message = error.message
       
-      // 如果是axios错误，提取更多信息
+      // 如果是 fetch 错误，提取更多信息
       if ('response' in error && error.response) {
-        const axiosError = error as any
-        const responseData = axiosError.response?.data
+        const fetchError = error as any
+        const responseData = fetchError.response?.data
         
-        // 检查是否是来自代理的 Dify API 原始错误
-        if (responseData && typeof responseData === 'object') {
-          if (responseData.error === 'Dify API原始错误') {
-            // 这是 Dify API 的原始错误，重新构建错误信息
-            detailedError.type = 'Dify API原始错误'
-            detailedError.message = `Dify API错误 ${responseData.dify_status}: ${responseData.dify_statusText}`
-            detailedError.details = {
-              dify_status: responseData.dify_status,
-              dify_statusText: responseData.dify_statusText,
-              dify_url: responseData.dify_url,
-              dify_response: responseData.dify_response,
-              dify_headers: responseData.dify_headers,
-              proxy_info: responseData.proxy_info
-            }
-          } else if (responseData.error === 'Dify API网络连接错误') {
-            // 这是网络连接错误，显示原始网络错误
-            detailedError.type = 'Dify API网络连接错误'
-            detailedError.message = responseData.network_error?.message || '网络连接失败'
-            detailedError.details = {
-              network_error: responseData.network_error,
-              dify_target: responseData.dify_target,
-              proxy_info: responseData.proxy_info
-            }
-          } else {
-            // 普通的代理错误
-            detailedError.details = {
-              status: axiosError.response?.status,
-              statusText: axiosError.response?.statusText,
-              data: responseData,
-              headers: axiosError.response?.headers,
-              config: {
-                url: axiosError.config?.url,
-                method: axiosError.config?.method,
-                timeout: axiosError.config?.timeout
-              }
-            }
-          }
-        } else {
-          // 非结构化响应数据
-          detailedError.details = {
-            status: axiosError.response?.status,
-            statusText: axiosError.response?.statusText,
-            data: responseData,
-            headers: axiosError.response?.headers,
-            config: {
-              url: axiosError.config?.url,
-              method: axiosError.config?.method,
-              timeout: axiosError.config?.timeout
-            }
+        // 现在代理直接透传 47.90.156.219 的原始错误
+        detailedError.type = '47.90.156.219 原始错误'
+        detailedError.message = `Dify API (47.90.156.219) 错误: ${fetchError.response?.status} ${fetchError.response?.statusText}`
+        detailedError.details = {
+          dify_status: fetchError.response?.status,
+          dify_statusText: fetchError.response?.statusText,
+          dify_url: '47.90.156.219/v1/workflows/run',
+          dify_original_response: responseData, // 这是 47.90.156.219 的原始响应
+          dify_headers: fetchError.response?.headers,
+          proxy_headers: {
+            'X-Dify-Source': fetchError.response?.headers?.['x-dify-source'],
+            'X-Proxy-Timestamp': fetchError.response?.headers?.['x-proxy-timestamp']
           }
         }
-      } else if ('request' in error && error.request) {
-        const axiosError = error as any
+      } else {
+        // 网络连接错误
+        detailedError.type = '网络连接错误'
+        detailedError.message = error.message
         detailedError.details = {
-          request: '请求已发送但未收到响应',
-          timeout: axiosError.config?.timeout,
-          url: axiosError.config?.url
+          error_name: error.name,
+          error_message: error.message,
+          target: '47.90.156.219/v1/workflows/run'
         }
       }
     } else {
