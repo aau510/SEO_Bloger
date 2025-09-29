@@ -172,12 +172,25 @@ export default function DifyWorkflowForm({ onBlogGenerated }: DifyWorkflowFormPr
       setCurrentStep(4)
       
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '博客生成失败'
-      setError(errorMessage)
+      console.error('博客生成失败:', err)
+      
+      // 提取详细错误信息
+      let errorInfo: any = '博客生成失败'
+      
+      if (err instanceof Error) {
+        errorInfo = err.message
+        
+        // 如果是增强的错误对象，使用详细错误信息
+        if ('detailedError' in err && (err as any).detailedError) {
+          errorInfo = (err as any).detailedError
+        }
+      }
+      
+      setError(typeof errorInfo === 'string' ? errorInfo : errorInfo.message || '博客生成失败')
       setWorkflowProgress(prev => ({
         ...prev,
         isRunning: false,
-        error: errorMessage
+        error: errorInfo  // 传递完整的错误信息（可能是字符串或对象）
       }))
     } finally {
       setIsLoading(false)

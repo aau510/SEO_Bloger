@@ -283,11 +283,61 @@ export async function generateSEOBlogWithDify(
     return result
     
   } catch (error) {
-    console.error('Dify API调用失败:', error)
-    onProgress?.('error', error instanceof Error ? error.message : 'API调用失败')
+    console.error('Dify代理连接失败:', error)
     
-    // 直接抛出错误，不生成备用内容
-    throw error
+    // 构建详细的错误信息
+    let detailedError = {
+      type: '代理连接错误',
+      timestamp: new Date().toISOString(),
+      originalError: null as any,
+      message: 'API调用失败',
+      details: {} as any
+    }
+    
+    if (error instanceof Error) {
+      detailedError.originalError = {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      }
+      detailedError.message = error.message
+      
+      // 如果是axios错误，提取更多信息
+      if ('response' in error && error.response) {
+        const axiosError = error as any
+        detailedError.details = {
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+          headers: axiosError.response?.headers,
+          config: {
+            url: axiosError.config?.url,
+            method: axiosError.config?.method,
+            timeout: axiosError.config?.timeout
+          }
+        }
+      } else if ('request' in error && error.request) {
+        const axiosError = error as any
+        detailedError.details = {
+          request: '请求已发送但未收到响应',
+          timeout: axiosError.config?.timeout,
+          url: axiosError.config?.url
+        }
+      }
+    } else {
+      detailedError.originalError = error
+      detailedError.message = String(error)
+    }
+    
+    // 向进度回调传递完整错误信息
+    onProgress?.('error', detailedError)
+    
+    // 创建增强的错误对象
+    const enhancedError = new Error(`代理连接失败: ${detailedError.message}`)
+    ;(enhancedError as any).originalError = error
+    ;(enhancedError as any).detailedError = detailedError
+    
+    throw enhancedError
   }
 }
 

@@ -27,7 +27,7 @@ interface WorkflowProgressProps {
     Keywords: KeywordData[]
   } | null
   outputData: string | null
-  error: string | null
+  error: string | any | null  // 支持字符串或详细错误对象
   currentStep?: string | null
   stepData?: any
   onComplete?: () => void
@@ -129,8 +129,17 @@ export default function WorkflowProgress({
           const runningStepIndex = newSteps.findIndex(step => step.status === 'running')
           if (runningStepIndex !== -1) {
             newSteps[runningStepIndex].status = 'error'
-            newSteps[runningStepIndex].description = error
             newSteps[runningStepIndex].timestamp = new Date()
+            
+            // 处理详细错误信息
+            if (typeof error === 'object' && error.type) {
+              // 详细错误对象
+              newSteps[runningStepIndex].description = `${error.type}: ${error.message}`
+              newSteps[runningStepIndex].data = error  // 保存完整错误信息
+            } else {
+              // 简单字符串错误
+              newSteps[runningStepIndex].description = typeof error === 'string' ? error : String(error)
+            }
           }
         } else if (outputData) {
           // 标记所有步骤为完成
@@ -296,6 +305,94 @@ export default function WorkflowProgress({
                       <pre className="text-xs text-gray-800 whitespace-pre-wrap">
                         {step.data.substring(0, 200)}...
                       </pre>
+                    </div>
+                  </div>
+                )}
+
+                {/* 显示详细错误信息 */}
+                {step.status === 'error' && step.data && typeof step.data === 'object' && step.data.type && (
+                  <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h5 className="text-sm font-medium text-red-800 mb-3 flex items-center">
+                      <ExclamationCircleIcon className="h-4 w-4 mr-2" />
+                      详细错误信息
+                    </h5>
+                    
+                    <div className="space-y-3 text-xs">
+                      {/* 基本错误信息 */}
+                      <div className="grid grid-cols-1 gap-2">
+                        <div>
+                          <span className="font-medium text-red-700">错误类型:</span>
+                          <span className="ml-2 text-red-900">{step.data.type}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-red-700">错误时间:</span>
+                          <span className="ml-2 text-red-900">{step.data.timestamp}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-red-700">错误消息:</span>
+                          <span className="ml-2 text-red-900">{step.data.message}</span>
+                        </div>
+                      </div>
+
+                      {/* 原始错误 */}
+                      {step.data.originalError && (
+                        <div className="border-t border-red-200 pt-3">
+                          <h6 className="font-medium text-red-700 mb-2">原始错误:</h6>
+                          <div className="bg-red-100 p-2 rounded text-red-800">
+                            <div><strong>名称:</strong> {step.data.originalError.name}</div>
+                            <div><strong>消息:</strong> {step.data.originalError.message}</div>
+                            {step.data.originalError.stack && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer font-medium">堆栈跟踪</summary>
+                                <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap">
+                                  {step.data.originalError.stack}
+                                </pre>
+                              </details>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* HTTP响应详情 */}
+                      {step.data.details && step.data.details.status && (
+                        <div className="border-t border-red-200 pt-3">
+                          <h6 className="font-medium text-red-700 mb-2">HTTP响应详情:</h6>
+                          <div className="bg-red-100 p-2 rounded text-red-800 space-y-1">
+                            <div><strong>状态码:</strong> {step.data.details.status}</div>
+                            <div><strong>状态文本:</strong> {step.data.details.statusText}</div>
+                            {step.data.details.config && (
+                              <div><strong>请求URL:</strong> {step.data.details.config.url}</div>
+                            )}
+                            {step.data.details.config && (
+                              <div><strong>超时设置:</strong> {step.data.details.config.timeout}ms</div>
+                            )}
+                            {step.data.details.data && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer font-medium">响应数据</summary>
+                                <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap">
+                                  {JSON.stringify(step.data.details.data, null, 2)}
+                                </pre>
+                              </details>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 网络请求详情 */}
+                      {step.data.details && step.data.details.request && (
+                        <div className="border-t border-red-200 pt-3">
+                          <h6 className="font-medium text-red-700 mb-2">网络请求详情:</h6>
+                          <div className="bg-red-100 p-2 rounded text-red-800 space-y-1">
+                            <div><strong>状态:</strong> {step.data.details.request}</div>
+                            {step.data.details.url && (
+                              <div><strong>目标URL:</strong> {step.data.details.url}</div>
+                            )}
+                            {step.data.details.timeout && (
+                              <div><strong>超时设置:</strong> {step.data.details.timeout}ms</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
