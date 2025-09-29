@@ -6,7 +6,7 @@
     "NEXT_PUBLIC_API_BASE_URL": "http://47.90.156.219/v1",
     "API_AUTHORIZATION_TOKEN": "app-EVYktrhqnqncQSV9BdDv6uuu",
     "NEXT_PUBLIC_SITE_NAME": "SEO博客智能体",
-    "NEXT_PUBLIC_SITE_URL": "http://localhost:3001",
+    "NEXT_PUBLIC_SITE_URL": "https://seo-bloger-cvdf.vercel.app",
     "NEXT_PUBLIC_SITE_DESCRIPTION": "基于Dify工作流的智能SEO博客生成系统"
   }
 }
