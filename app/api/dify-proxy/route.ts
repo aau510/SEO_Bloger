@@ -20,19 +20,18 @@ export async function POST(request: NextRequest) {
     console.log('   Token:', `Bearer ${DIFY_API_TOKEN.substring(0, 25)}...`)
     console.log('   请求数据:', JSON.stringify(body, null, 2).substring(0, 500) + '...')
     
-    // 直接调用Dify API
+    // 在Netlify 26秒限制内尽快完成
     const response = await axios.post(`${DIFY_API_BASE_URL}/workflows/run`, body, {
       headers: {
         'Authorization': `Bearer ${DIFY_API_TOKEN}`,
         'Content-Type': 'application/json',
         'User-Agent': 'SEO-Blog-Agent/1.0',
       },
-      timeout: 60000, // 增加超时时间到60秒
+      timeout: 20000, // 20秒超时，留出6秒缓冲
       validateStatus: () => true
     })
     
     console.log('   响应状态:', response.status, response.statusText)
-    console.log('   响应头:', response.headers)
     
     if (response.status < 200 || response.status >= 300) {
       console.error('❌ Dify API错误:', response.data)
