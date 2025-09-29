@@ -353,8 +353,75 @@ export default function WorkflowProgress({
                         </div>
                       )}
 
-                      {/* HTTP响应详情 */}
-                      {step.data.details && step.data.details.status && (
+                      {/* Dify API 原始错误详情 */}
+                      {step.data.details && step.data.details.dify_status && (
+                        <div className="border-t border-red-200 pt-3">
+                          <h6 className="font-medium text-red-700 mb-2">🔥 Dify API 原始错误:</h6>
+                          <div className="bg-red-100 p-2 rounded text-red-800 space-y-1">
+                            <div><strong>Dify状态码:</strong> {step.data.details.dify_status}</div>
+                            <div><strong>Dify状态文本:</strong> {step.data.details.dify_statusText}</div>
+                            <div><strong>Dify API URL:</strong> {step.data.details.dify_url}</div>
+                            {step.data.details.dify_response && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer font-medium">🎯 Dify API 原始响应数据</summary>
+                                <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap bg-red-200 p-2 rounded">
+                                  {JSON.stringify(step.data.details.dify_response, null, 2)}
+                                </pre>
+                              </details>
+                            )}
+                            {step.data.details.dify_headers && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer font-medium">Dify 响应头</summary>
+                                <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap">
+                                  {JSON.stringify(step.data.details.dify_headers, null, 2)}
+                                </pre>
+                              </details>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Dify API 网络连接错误详情 */}
+                      {step.data.details && step.data.details.network_error && (
+                        <div className="border-t border-red-200 pt-3">
+                          <h6 className="font-medium text-red-700 mb-2">🌐 Dify API 网络连接错误:</h6>
+                          <div className="bg-red-100 p-2 rounded text-red-800 space-y-1">
+                            <div><strong>错误名称:</strong> {step.data.details.network_error.name}</div>
+                            <div><strong>错误消息:</strong> {step.data.details.network_error.message}</div>
+                            {step.data.details.network_error.code && (
+                              <div><strong>错误代码:</strong> {step.data.details.network_error.code}</div>
+                            )}
+                            {step.data.details.network_error.syscall && (
+                              <div><strong>系统调用:</strong> {step.data.details.network_error.syscall}</div>
+                            )}
+                            {step.data.details.network_error.hostname && (
+                              <div><strong>目标主机:</strong> {step.data.details.network_error.hostname}</div>
+                            )}
+                            {step.data.details.network_error.port && (
+                              <div><strong>目标端口:</strong> {step.data.details.network_error.port}</div>
+                            )}
+                            {step.data.details.dify_target && (
+                              <div className="mt-2 p-2 bg-red-200 rounded">
+                                <strong>目标 Dify API:</strong>
+                                <div>URL: {step.data.details.dify_target.url}</div>
+                                <div>方法: {step.data.details.dify_target.method}</div>
+                                <div>超时: {step.data.details.dify_target.timeout}ms</div>
+                              </div>
+                            )}
+                            {step.data.details.network_error.stack && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer font-medium">网络错误堆栈跟踪</summary>
+                                <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap">
+                                  {step.data.details.network_error.stack}
+                                </pre>
+                              </details>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* HTTP响应详情 (普通代理错误) */}
+                      {step.data.details && step.data.details.status && !step.data.details.dify_status && !step.data.details.network_error && (
                         <div className="border-t border-red-200 pt-3">
                           <h6 className="font-medium text-red-700 mb-2">HTTP响应详情:</h6>
                           <div className="bg-red-100 p-2 rounded text-red-800 space-y-1">

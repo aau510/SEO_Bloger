@@ -305,15 +305,57 @@ export async function generateSEOBlogWithDify(
       // 如果是axios错误，提取更多信息
       if ('response' in error && error.response) {
         const axiosError = error as any
-        detailedError.details = {
-          status: axiosError.response?.status,
-          statusText: axiosError.response?.statusText,
-          data: axiosError.response?.data,
-          headers: axiosError.response?.headers,
-          config: {
-            url: axiosError.config?.url,
-            method: axiosError.config?.method,
-            timeout: axiosError.config?.timeout
+        const responseData = axiosError.response?.data
+        
+        // 检查是否是来自代理的 Dify API 原始错误
+        if (responseData && typeof responseData === 'object') {
+          if (responseData.error === 'Dify API原始错误') {
+            // 这是 Dify API 的原始错误，重新构建错误信息
+            detailedError.type = 'Dify API原始错误'
+            detailedError.message = `Dify API错误 ${responseData.dify_status}: ${responseData.dify_statusText}`
+            detailedError.details = {
+              dify_status: responseData.dify_status,
+              dify_statusText: responseData.dify_statusText,
+              dify_url: responseData.dify_url,
+              dify_response: responseData.dify_response,
+              dify_headers: responseData.dify_headers,
+              proxy_info: responseData.proxy_info
+            }
+          } else if (responseData.error === 'Dify API网络连接错误') {
+            // 这是网络连接错误，显示原始网络错误
+            detailedError.type = 'Dify API网络连接错误'
+            detailedError.message = responseData.network_error?.message || '网络连接失败'
+            detailedError.details = {
+              network_error: responseData.network_error,
+              dify_target: responseData.dify_target,
+              proxy_info: responseData.proxy_info
+            }
+          } else {
+            // 普通的代理错误
+            detailedError.details = {
+              status: axiosError.response?.status,
+              statusText: axiosError.response?.statusText,
+              data: responseData,
+              headers: axiosError.response?.headers,
+              config: {
+                url: axiosError.config?.url,
+                method: axiosError.config?.method,
+                timeout: axiosError.config?.timeout
+              }
+            }
+          }
+        } else {
+          // 非结构化响应数据
+          detailedError.details = {
+            status: axiosError.response?.status,
+            statusText: axiosError.response?.statusText,
+            data: responseData,
+            headers: axiosError.response?.headers,
+            config: {
+              url: axiosError.config?.url,
+              method: axiosError.config?.method,
+              timeout: axiosError.config?.timeout
+            }
           }
         }
       } else if ('request' in error && error.request) {

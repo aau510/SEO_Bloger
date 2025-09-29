@@ -34,13 +34,24 @@ export async function POST(request: NextRequest) {
     console.log('   响应状态:', response.status, response.statusText)
     
     if (response.status < 200 || response.status >= 300) {
-      console.error('❌ Dify API错误:', response.data)
+      console.error('❌ Dify API原始错误:', response.status, response.statusText, response.data)
       
-      return NextResponse.json({
-        error: 'Dify API调用失败',
-        status: response.status,
-        message: response.data
-      }, { status: response.status })
+      // 完整透传 Dify API 的原始错误信息
+      const difyError = {
+        error: 'Dify API原始错误',
+        dify_status: response.status,
+        dify_statusText: response.statusText,
+        dify_url: `${DIFY_API_BASE_URL}/workflows/run`,
+        dify_response: response.data, // 完整的 Dify 响应数据
+        dify_headers: response.headers,
+        proxy_info: {
+          message: '这是来自 Dify API 服务器的原始错误响应',
+          timestamp: new Date().toISOString(),
+          proxy_url: '/api/dify-proxy'
+        }
+      }
+      
+      return NextResponse.json(difyError, { status: response.status })
     }
     
     // 获取响应数据
@@ -83,15 +94,35 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    return NextResponse.json({
-      error: '代理请求失败',
-      message: errorMessage,
-      details: {
+    // 构建包含原始错误的详细信息
+    const networkError = {
+      error: 'Dify API网络连接错误',
+      network_error: {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        // 如果是 axios 错误，提取更多信息
+        ...(error && typeof error === 'object' && 'code' in error ? {
+          code: (error as any).code,
+          errno: (error as any).errno,
+          syscall: (error as any).syscall,
+          hostname: (error as any).hostname,
+          port: (error as any).port
+        } : {})
+      },
+      dify_target: {
+        url: `${DIFY_API_BASE_URL}/workflows/run`,
+        method: 'POST',
+        timeout: 180000
+      },
+      proxy_info: {
+        message: '这是连接到 Dify API 服务器时发生的网络错误',
         timestamp: new Date().toISOString(),
-        target: `${DIFY_API_BASE_URL}/workflows/run`,
-        errorType: error instanceof Error ? error.name : 'Unknown'
+        proxy_url: '/api/dify-proxy'
       }
-    }, { status: statusCode })
+    }
+    
+    return NextResponse.json(networkError, { status: statusCode })
   }
 }
 
