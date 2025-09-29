@@ -6,7 +6,12 @@ import axios from 'axios'
  * 解决HTTPS网站调用HTTP API的Mixed Content问题
  */
 
-const DIFY_API_BASE_URL = 'http://47.90.156.219/v1'
+// 尝试多个API端点
+const DIFY_API_ENDPOINTS = [
+  'http://47.90.156.219/v1',
+  'https://cors-anywhere.herokuapp.com/http://47.90.156.219/v1',
+  'https://api.allorigins.win/raw?url=' + encodeURIComponent('http://47.90.156.219/v1')
+]
 const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQSV9BdDv6uuu'
 
 export async function POST(request: NextRequest) {
@@ -15,20 +20,45 @@ export async function POST(request: NextRequest) {
     
     // 获取请求体
     const body = await request.json()
-    console.log('   目标URL:', `${DIFY_API_BASE_URL}/workflows/run`)
+    console.log('   目标URL:', `${DIFY_API_ENDPOINTS[0]}/workflows/run`)
     console.log('   Token:', `Bearer ${DIFY_API_TOKEN.substring(0, 25)}...`)
     console.log('   请求数据:', JSON.stringify(body, null, 2).substring(0, 500) + '...')
     
-    // 使用axios发送请求
-    const response = await axios.post(`${DIFY_API_BASE_URL}/workflows/run`, body, {
-      headers: {
-        'Authorization': `Bearer ${DIFY_API_TOKEN}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'SEO-Blog-Agent/1.0',
-      },
-      timeout: 30000,
-      validateStatus: () => true // 不抛出状态码错误
-    })
+    // 尝试多个API端点
+    let response = null
+    let lastError = null
+    
+    for (const baseUrl of DIFY_API_ENDPOINTS) {
+      try {
+        console.log(`   尝试端点: ${baseUrl}`)
+        
+        const url = baseUrl.includes('allorigins') 
+          ? baseUrl + '/workflows/run'
+          : `${baseUrl}/workflows/run`
+        
+        response = await axios.post(url, body, {
+          headers: {
+            'Authorization': `Bearer ${DIFY_API_TOKEN}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'SEO-Blog-Agent/1.0',
+          },
+          timeout: 30000,
+          validateStatus: () => true // 不抛出状态码错误
+        })
+        
+        console.log(`   ✅ 端点成功: ${baseUrl}`)
+        break
+        
+      } catch (error) {
+        console.log(`   ❌ 端点失败: ${baseUrl} - ${error instanceof Error ? error.message : String(error)}`)
+        lastError = error
+        continue
+      }
+    }
+    
+    if (!response) {
+      throw lastError || new Error('所有API端点都失败了')
+    }
     
     console.log('   响应状态:', response.status, response.statusText)
     console.log('   响应头:', response.headers)
