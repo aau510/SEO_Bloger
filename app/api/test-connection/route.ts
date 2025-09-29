@@ -1,44 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server'
+import axios from 'axios'
 
-const DIFY_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://qa-dify.joyme.sg/v1'
-const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'Bearer app-EVYktrhqnqncQSV9BdDv6uuu'
-
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    // 测试基本连接
-    const response = await fetch(`${DIFY_API_BASE_URL}/info`, {
-      method: 'GET',
-      headers: {
-        'Authorization': DIFY_API_TOKEN,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      return NextResponse.json({
-        success: true,
-        message: 'Dify API连接成功',
-        data: data,
-        endpoint: DIFY_API_BASE_URL,
-        timestamp: new Date().toISOString()
-      })
-    } else {
-      return NextResponse.json({
-        success: false,
-        message: `连接失败: ${response.status} ${response.statusText}`,
-        endpoint: DIFY_API_BASE_URL,
-        timestamp: new Date().toISOString()
-      }, { status: response.status })
+    console.log('🔍 测试网络连接...')
+    
+    // 测试多个目标
+    const targets = [
+      'http://47.90.156.219/v1/workflows/run',
+      'http://httpbin.org/get',
+      'http://api.github.com',
+      'https://api.github.com'
+    ]
+    
+    const results = []
+    
+    for (const target of targets) {
+      try {
+        console.log(`   测试: ${target}`)
+        const start = Date.now()
+        
+        const response = await axios.get(target, {
+          timeout: 10000,
+          validateStatus: () => true
+        })
+        
+        const duration = Date.now() - start
+        
+        results.push({
+          target,
+          status: response.status,
+          duration,
+          success: true,
+          error: null
+        })
+        
+        console.log(`   ✅ ${target}: ${response.status} (${duration}ms)`)
+        
+      } catch (error) {
+        const duration = Date.now() - start
+        results.push({
+          target,
+          status: null,
+          duration,
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        })
+        
+        console.log(`   ❌ ${target}: ${error instanceof Error ? error.message : String(error)}`)
+      }
     }
-  } catch (error) {
-    console.error('Dify连接测试失败:', error)
+    
     return NextResponse.json({
-      success: false,
-      message: '网络连接失败',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      endpoint: DIFY_API_BASE_URL,
+      message: '网络连接测试完成',
+      results,
       timestamp: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('❌ 测试失败:', error)
+    
+    return NextResponse.json({
+      error: '测试失败',
+      message: error instanceof Error ? error.message : '未知错误'
     }, { status: 500 })
   }
 }
