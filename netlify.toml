@@ -8,9 +8,27 @@
   NEXT_PUBLIC_SITE_NAME = "SEO博客智能体"
   NEXT_PUBLIC_SITE_DESCRIPTION = "基于Dify工作流的智能SEO博客生成系统"
 
+# Next.js specific settings - 必须在最前面
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# API路由重定向
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
+  status = 200
+
+# SPA fallback for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}
+
+# 默认重定向到首页
+[[redirects]]
+  from = "/*"
+  to = "/"
   status = 200
 
 [[headers]]
@@ -20,15 +38,13 @@
     Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
 
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+
 [functions]
   directory = ".netlify/functions"
   node_bundler = "esbuild"
-
-# Next.js specific settings
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
-[dev]
-  command = "npm run dev"
-  port = 3000
-  publish = ".next"
