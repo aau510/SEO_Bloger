@@ -48,3 +48,5 @@
 [functions]
   directory = ".netlify/functions"
   node_bundler = "esbuild"
+  # 增加函数超时时间 (免费版最大26秒)
+  timeout = 26

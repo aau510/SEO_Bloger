@@ -6,13 +6,8 @@ import axios from 'axios'
  * 解决HTTPS网站调用HTTP API的Mixed Content问题
  */
 
-// 尝试多种连接方式
-const DIFY_API_ENDPOINTS = [
-  'http://47.90.156.219/v1',
-  'http://47.90.156.219:80/v1',
-  // 如果有HTTPS支持可以尝试
-  // 'https://47.90.156.219/v1'
-]
+// 使用统一的API端点
+const DIFY_API_BASE_URL = 'http://47.90.156.219/v1'
 const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQSV9BdDv6uuu'
 
 export async function POST(request: NextRequest) {
@@ -21,40 +16,20 @@ export async function POST(request: NextRequest) {
     
     // 获取请求体
     const body = await request.json()
+    console.log('   目标URL:', `${DIFY_API_BASE_URL}/workflows/run`)
     console.log('   Token:', `Bearer ${DIFY_API_TOKEN.substring(0, 25)}...`)
     console.log('   请求数据:', JSON.stringify(body, null, 2).substring(0, 500) + '...')
     
-    // 尝试多个端点
-    let response = null
-    let lastError = null
-    
-    for (const baseUrl of DIFY_API_ENDPOINTS) {
-      try {
-        console.log(`   尝试连接: ${baseUrl}/workflows/run`)
-        
-        response = await axios.post(`${baseUrl}/workflows/run`, body, {
-          headers: {
-            'Authorization': `Bearer ${DIFY_API_TOKEN}`,
-            'Content-Type': 'application/json',
-            'User-Agent': 'SEO-Blog-Agent/1.0',
-          },
-          timeout: 15000, // 缩短超时时间
-          validateStatus: () => true
-        })
-        
-        console.log(`   ✅ 连接成功: ${baseUrl}`)
-        break
-        
-      } catch (error) {
-        console.log(`   ❌ 连接失败: ${baseUrl} - ${error instanceof Error ? error.message : String(error)}`)
-        lastError = error
-        continue
-      }
-    }
-    
-    if (!response) {
-      throw lastError || new Error('所有端点连接失败')
-    }
+    // 直接调用Dify API
+    const response = await axios.post(`${DIFY_API_BASE_URL}/workflows/run`, body, {
+      headers: {
+        'Authorization': `Bearer ${DIFY_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'SEO-Blog-Agent/1.0',
+      },
+      timeout: 60000, // 增加超时时间到60秒
+      validateStatus: () => true
+    })
     
     console.log('   响应状态:', response.status, response.statusText)
     console.log('   响应头:', response.headers)
@@ -89,10 +64,13 @@ export async function POST(request: NextRequest) {
       
       // 处理特定错误类型
       if (error.name === 'AbortError') {
-        errorMessage = '请求超时 (15秒)'
+        errorMessage = '请求超时 (60秒) - Dify工作流处理时间较长'
+        statusCode = 408
+      } else if (error.message.includes('timeout')) {
+        errorMessage = '请求超时 - Dify API处理时间过长，请稍后重试'
         statusCode = 408
       } else if (error.message.includes('ETIMEDOUT')) {
-        errorMessage = '网络连接超时 - Dify API服务器可能限制了Netlify服务器的访问'
+        errorMessage = '网络连接超时 - 正在尝试连接Dify API服务器'
         statusCode = 503
       } else if (error.message.includes('fetch failed')) {
         errorMessage = '网络连接失败，无法连接到Dify API服务器'
@@ -111,7 +89,7 @@ export async function POST(request: NextRequest) {
       message: errorMessage,
       details: {
         timestamp: new Date().toISOString(),
-        target: DIFY_API_ENDPOINTS.map(url => `${url}/workflows/run`).join(', '),
+        target: `${DIFY_API_BASE_URL}/workflows/run`,
         errorType: error instanceof Error ? error.name : 'Unknown'
       }
     }, { status: statusCode })

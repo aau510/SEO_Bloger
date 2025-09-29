@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const DIFY_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://qa-dify.joyme.sg/v1'
+const DIFY_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://47.90.156.219/v1'
 const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'Bearer app-EVYktrhqnqncQSV9BdDv6uuu'
 
 export async function POST(request: NextRequest) {
