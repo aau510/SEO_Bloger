@@ -9,6 +9,7 @@ const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQ
 // 创建Dify API客户端 - 使用代理
 const difyClient = axios.create({
   baseURL: DIFY_API_BASE_URL,
+  timeout:  1000 * 180,
   headers: {
     'Content-Type': 'application/json',
   },

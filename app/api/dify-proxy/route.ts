@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
         'User-Agent': 'SEO-Blog-Agent/1.0',
       },
-      timeout: 20000, // 20秒超时，留出6秒缓冲
+      timeout: 1000 * 180, // 20秒超时，留出6秒缓冲
       validateStatus: () => true
     })
     
