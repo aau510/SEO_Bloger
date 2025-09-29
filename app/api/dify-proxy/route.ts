@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import https from 'https'
+import http from 'http'
 
 /**
  * Dify API代理路由
@@ -18,34 +20,72 @@ export async function POST(request: NextRequest) {
     console.log('   Token:', `Bearer ${DIFY_API_TOKEN.substring(0, 25)}...`)
     console.log('   请求数据:', JSON.stringify(body, null, 2).substring(0, 500) + '...')
     
-    // 发送请求到Dify API - 添加超时和重试
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30秒超时
-    
-    const response = await fetch(`${DIFY_API_BASE_URL}/workflows/run`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${DIFY_API_TOKEN}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'SEO-Blog-Agent/1.0',
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal
+    // 使用Node.js原生http模块发送请求
+    const response = await new Promise<any>((resolve, reject) => {
+      const postData = JSON.stringify(body)
+      const url = new URL(`${DIFY_API_BASE_URL}/workflows/run`)
+      
+      const options = {
+        hostname: url.hostname,
+        port: url.port || 80,
+        path: url.pathname,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${DIFY_API_TOKEN}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+          'User-Agent': 'SEO-Blog-Agent/1.0',
+        },
+        timeout: 30000
+      }
+      
+      const req = http.request(options, (res) => {
+        let data = ''
+        
+        res.on('data', (chunk) => {
+          data += chunk
+        })
+        
+        res.on('end', () => {
+          try {
+            const jsonData = JSON.parse(data)
+            resolve({
+              ok: res.statusCode >= 200 && res.statusCode < 300,
+              status: res.statusCode,
+              statusText: res.statusMessage,
+              headers: res.headers,
+              json: () => Promise.resolve(jsonData)
+            })
+          } catch (error) {
+            reject(new Error(`JSON解析失败: ${error}`))
+          }
+        })
+      })
+      
+      req.on('error', (error) => {
+        reject(error)
+      })
+      
+      req.on('timeout', () => {
+        req.destroy()
+        reject(new Error('请求超时'))
+      })
+      
+      req.write(postData)
+      req.end()
     })
-    
-    clearTimeout(timeoutId)
     
     console.log('   响应状态:', response.status, response.statusText)
     console.log('   响应头:', Object.fromEntries(response.headers.entries()))
     
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ Dify API错误:', errorText)
+      const errorData = await response.json()
+      console.error('❌ Dify API错误:', errorData)
       
       return NextResponse.json({
         error: 'Dify API调用失败',
         status: response.status,
-        message: errorText
+        message: errorData
       }, { status: response.status })
     }
     
