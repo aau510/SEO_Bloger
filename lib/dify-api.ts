@@ -2,14 +2,14 @@ import axios from 'axios'
 import { DifyApiRequest, DifyApiResponse, KeywordData, KeywordFilter, UrlAnalysis } from '@/types/dify'
 import { scrapeUrlContent, formatUrlContentForDify } from './url-scraper'
 
-const DIFY_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://qa-dify.joyme.sg/v1'
-const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'Bearer app-EVYktrhqnqncQSV9BdDv6uuu'
+// 使用代理API避免Mixed Content问题
+const DIFY_API_BASE_URL = '/api/dify-proxy'
+const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQSV9BdDv6uuu'
 
-// 创建Dify API客户端
+// 创建Dify API客户端 - 使用代理
 const difyClient = axios.create({
   baseURL: DIFY_API_BASE_URL,
   headers: {
-    'Authorization': DIFY_API_TOKEN,
     'Content-Type': 'application/json',
   },
 })
@@ -250,11 +250,10 @@ export async function generateSEOBlogWithDifyStream(
 
     onProgress?.('process')
 
-    // 调用Dify工作流（流式）
-    const response = await fetch(`${DIFY_API_BASE_URL}/workflows/run`, {
+    // 调用Dify工作流（流式）- 使用代理
+    const response = await fetch('/api/dify-proxy', {
       method: 'POST',
       headers: {
-        'Authorization': DIFY_API_TOKEN,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request)
