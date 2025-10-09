@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
     const keywordList = keywords.map((k: any) => k.keyword).join('、')
     const mainKeyword = keywords[0]?.keyword || 'SEO优化'
     
+    // 模拟处理时间，让用户看到进度
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
     // 生成智能内容
     const smartContent = `# ${mainKeyword}完整指南
 
