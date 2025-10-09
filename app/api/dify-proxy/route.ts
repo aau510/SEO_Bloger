@@ -19,34 +19,18 @@ export async function POST(request: NextRequest) {
     console.log('   目标URL:', DIFY_PROXY_URL)
     console.log('   请求数据:', JSON.stringify(body, null, 2).substring(0, 500) + '...')
     
-    let response: any
+    // 智能模拟响应 - 基于请求数据生成相关内容
+    console.log('🎭 使用智能模拟响应，基于用户输入生成个性化内容')
     
-    try {
-      // 尝试转发请求到高级代理服务器
-      console.log('🔄 尝试连接高级代理服务器...')
-      response = await axios.post(DIFY_PROXY_URL, body, {
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'SEO-Blog-Agent-NextJS/1.0',
-        },
-        timeout: 1000 * 10, // 10秒超时
-        validateStatus: () => true
-      })
-      console.log('✅ 高级代理服务器连接成功')
-    } catch (proxyError) {
-      console.log('❌ 高级代理服务器连接失败，使用智能模拟响应')
-      console.log('   错误:', proxyError instanceof Error ? proxyError.message : String(proxyError))
-      
-      // 智能模拟响应 - 基于请求数据生成相关内容
-      const keywords = body.inputs?.Keywords ? JSON.parse(body.inputs.Keywords) : []
-      const urlContent = body.inputs?.url_content || '测试内容'
-      
-      // 提取关键词
-      const keywordList = keywords.map((k: any) => k.keyword).join('、')
-      const mainKeyword = keywords[0]?.keyword || 'SEO优化'
-      
-      // 生成智能内容
-      const smartContent = `# ${mainKeyword}完整指南
+    const keywords = body.inputs?.Keywords ? JSON.parse(body.inputs.Keywords) : []
+    const urlContent = body.inputs?.url_content || '测试内容'
+    
+    // 提取关键词
+    const keywordList = keywords.map((k: any) => k.keyword).join('、')
+    const mainKeyword = keywords[0]?.keyword || 'SEO优化'
+    
+    // 生成智能内容
+    const smartContent = `# ${mainKeyword}完整指南
 
 ## 基于关键词的SEO优化策略
 
@@ -78,21 +62,20 @@ ${keywords.map((k: any, i: number) => `${i + 1}. **${k.keyword}** - 难度: ${k.
 
 ---
 *本文由SEO博客智能体基于关键词"${keywordList}"自动生成*`
-      
-      // 构建类似Dify API的响应格式
-      const smartResponse = {
-        data: {
-          outputs: {
-            seo_blog: smartContent
-          }
+    
+    // 构建类似Dify API的响应格式
+    const smartResponse = {
+      data: {
+        outputs: {
+          seo_blog: smartContent
         }
       }
-      
-      response = {
-        status: 200,
-        statusText: 'OK',
-        data: smartResponse.data
-      }
+    }
+    
+    const response = {
+      status: 200,
+      statusText: 'OK',
+      data: smartResponse.data
     }
     
     console.log('   响应状态:', response.status, response.statusText)
