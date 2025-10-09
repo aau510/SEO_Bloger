@@ -66,8 +66,10 @@ ${keywords.map((k: any, i: number) => `${i + 1}. **${k.keyword}** - 难度: ${k.
     // 构建类似Dify API的响应格式
     const smartResponse = {
       data: {
-        outputs: {
-          seo_blog: smartContent
+        data: {
+          outputs: {
+            seo_blog: smartContent
+          }
         }
       }
     }
