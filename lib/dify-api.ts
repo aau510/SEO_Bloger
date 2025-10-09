@@ -229,23 +229,54 @@ export async function generateSEOBlogWithDifyDirect(
     
     console.log('🔗 直接连接Dify API:', `${DIFY_DIRECT_URL}/workflows/run`)
     
-    const response = await axios.post(`${DIFY_DIRECT_URL}/workflows/run`, request, {
-      headers: {
-        'Authorization': `Bearer ${DIFY_TOKEN}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'SEO-Blog-Agent-Direct/1.0',
-      },
-      timeout: 180000, // 3分钟超时
-      validateStatus: () => true
-    })
+    // 使用 fetch 进行直接连接，添加完整的请求头
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 180000) // 3分钟超时
+    
+    try {
+      const response = await fetch(`${DIFY_DIRECT_URL}/workflows/run`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${DIFY_TOKEN}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'SEO-Blog-Agent-Direct/1.0',
+          'Referer': window.location.origin, // 添加 Referer 头
+          'Origin': window.location.origin,  // 添加 Origin 头
+          'Accept': 'application/json',
+          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+        mode: 'cors', // 明确指定 CORS 模式
+        credentials: 'omit' // 不发送 cookies
+      })
+      
+      clearTimeout(timeoutId)
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`)
+        ;(error as any).response = {
+          status: response.status,
+          statusText: response.statusText,
+          data: data,
+          headers: Object.fromEntries(response.headers.entries())
+        }
+        throw error
+      }
+      
+      return { data }
+    } catch (error) {
+      clearTimeout(timeoutId)
+      throw error
+    }
     
     onProgress?.('receive')
     
-    console.log('📊 直接连接响应:', response.status, response.statusText)
-    
-    if (response.status < 200 || response.status >= 300) {
-      throw new Error(`Dify API错误: ${response.status} ${response.statusText}`)
-    }
+    console.log('📊 直接连接响应:', response.data)
     
     let result = ''
     if (response.data && response.data.data && response.data.data.outputs) {
