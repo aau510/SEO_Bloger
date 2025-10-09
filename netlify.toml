@@ -3,10 +3,11 @@
   publish = ".next"
 
 [build.environment]
-  NEXT_PUBLIC_API_BASE_URL = "http://10.61.197.191:3001/api/dify-proxy"
+  NEXT_PUBLIC_API_BASE_URL = "/api/dify-proxy"
   API_AUTHORIZATION_TOKEN = "app-EVYktrhqnqncQSV9BdDv6uuu"
   NEXT_PUBLIC_SITE_NAME = "SEO Blog Agent"
   NEXT_PUBLIC_SITE_DESCRIPTION = "AI-powered SEO blog generation system"
+  DIFY_PROXY_URL = "http://10.61.197.191:3001/api/dify-proxy"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

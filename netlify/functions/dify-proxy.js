@@ -1,8 +1,7 @@
 const axios = require('axios')
 
-// 使用统一的API端点
-const DIFY_API_BASE_URL = 'http://47.90.156.219/v1'
-const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQSV9BdDv6uuu'
+// 使用我们的代理服务器
+const DIFY_PROXY_URL = process.env.DIFY_PROXY_URL || 'http://10.61.197.191:3001/api/dify-proxy'
 
 exports.handler = async (event, context) => {
   // 设置CORS头部
@@ -32,35 +31,33 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('🔄 Netlify函数: Dify代理请求开始')
+    console.log('🔄 Netlify函数: 转发请求到代理服务器')
     
     // 解析请求体
     const body = JSON.parse(event.body || '{}')
-    console.log('   目标URL:', `${DIFY_API_BASE_URL}/workflows/run`)
-    console.log('   Token:', `Bearer ${DIFY_API_TOKEN.substring(0, 25)}...`)
+    console.log('   目标URL:', DIFY_PROXY_URL)
     console.log('   请求数据:', JSON.stringify(body, null, 2).substring(0, 500) + '...')
     
-    // 调用Dify API
-    const response = await axios.post(`${DIFY_API_BASE_URL}/workflows/run`, body, {
+    // 转发请求到我们的代理服务器
+    const response = await axios.post(DIFY_PROXY_URL, body, {
       headers: {
-        'Authorization': `Bearer ${DIFY_API_TOKEN}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'SEO-Blog-Agent/1.0',
+        'User-Agent': 'SEO-Blog-Agent-Netlify/1.0',
       },
-      timeout: 20000, // 20秒超时
+      timeout: 30000, // 30秒超时
       validateStatus: () => true
     })
     
     console.log('   响应状态:', response.status, response.statusText)
     
     if (response.status < 200 || response.status >= 300) {
-      console.error('❌ Dify API错误:', response.data)
+      console.error('❌ 代理服务器错误:', response.data)
       
       return {
         statusCode: response.status,
         headers,
         body: JSON.stringify({
-          error: 'Dify API调用失败',
+          error: '代理服务器调用失败',
           status: response.status,
           message: response.data
         })
@@ -108,7 +105,7 @@ exports.handler = async (event, context) => {
         message: errorMessage,
         details: {
           timestamp: new Date().toISOString(),
-          target: `${DIFY_API_BASE_URL}/workflows/run`,
+          target: DIFY_PROXY_URL,
           errorType: error instanceof Error ? error.name : 'Unknown'
         }
       })

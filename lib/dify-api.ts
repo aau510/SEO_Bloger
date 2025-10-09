@@ -3,7 +3,7 @@ import { DifyApiRequest, DifyApiResponse, KeywordData, KeywordFilter, UrlAnalysi
 import { scrapeUrlContent, formatUrlContentForDify } from './url-scraper'
 
 // 使用代理API避免Mixed Content问题
-const DIFY_API_BASE_URL = 'http://10.61.197.191:3001/api/dify-proxy'
+const DIFY_API_BASE_URL = '/api/dify-proxy'
 const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQSV9BdDv6uuu'
 
 // Dify API 基础配置
