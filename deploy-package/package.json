@@ -1,0 +1,26 @@
+{
+  "name": "dify-proxy-server",
+  "version": "1.0.0",
+  "description": "Dify API Proxy Server for SEO Blog Agent",
+  "main": "proxy-server.js",
+  "scripts": {
+    "start": "node proxy-server.js",
+    "dev": "nodemon proxy-server.js",
+    "pm2:start": "pm2 start proxy-server.js --name dify-proxy",
+    "pm2:stop": "pm2 stop dify-proxy",
+    "pm2:restart": "pm2 restart dify-proxy",
+    "pm2:logs": "pm2 logs dify-proxy"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "http-proxy-middleware": "^2.0.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
