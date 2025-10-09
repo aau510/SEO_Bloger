@@ -6,8 +6,8 @@ import axios from 'axios'
  * 解决HTTPS网站调用HTTP API的Mixed Content问题
  */
 
-// 使用模拟的Dify API响应，避免网络连接问题
-const USE_MOCK_RESPONSE = true
+// 使用真实的Dify API响应
+const USE_MOCK_RESPONSE = false
 const DIFY_API_BASE_URL = 'http://47.90.156.219/v1'
 const DIFY_API_TOKEN = process.env.API_AUTHORIZATION_TOKEN || 'app-EVYktrhqnqncQSV9BdDv6uuu'
 
