@@ -3,15 +3,21 @@
 import { useState } from 'react'
 import Header from '@/components/Header'
 import DifyWorkflowForm from '@/components/DifyWorkflowForm'
+import BatchBlogGenerator from '@/components/BatchBlogGenerator'
 import { 
   ChartBarIcon, 
   DocumentTextIcon, 
   GlobeAltIcon,
-  SparklesIcon 
+  SparklesIcon,
+  QueueListIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/react/24/outline'
+
+type TabType = 'single' | 'batch'
 
 export default function Home() {
   const [generatedBlog, setGeneratedBlog] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<TabType>('single')
 
   const handleBlogGenerated = (blog: string) => {
     setGeneratedBlog(blog)
@@ -99,9 +105,45 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 工作流表单 - 全宽度显示 */}
+          {/* Tab切换 - 已隐藏批量生成入口 */}
           <div className="max-w-4xl mx-auto">
-            <DifyWorkflowForm onBlogGenerated={handleBlogGenerated} />
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+              {/* Tab Header - 仅显示单个生成 */}
+              <div className="flex border-b border-gray-200">
+                <button
+                  onClick={() => setActiveTab('single')}
+                  className="flex-1 px-6 py-4 text-sm font-medium transition-all bg-blue-50 text-blue-700 border-b-2 border-blue-600"
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <DocumentTextIcon className="h-5 w-5" />
+                    <span>单个生成</span>
+                  </div>
+                </button>
+                {/* 批量生成入口已隐藏
+                <button
+                  onClick={() => setActiveTab('batch')}
+                  className={`flex-1 px-6 py-4 text-sm font-medium transition-all ${
+                    activeTab === 'batch'
+                      ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <QueueListIcon className="h-5 w-5" />
+                    <span>批量生成</span>
+                    <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                      NEW
+                    </span>
+                  </div>
+                </button>
+                */}
+              </div>
+
+              {/* Tab Content - 只显示单个生成 */}
+              <div className="p-6">
+                <DifyWorkflowForm onBlogGenerated={handleBlogGenerated} />
+              </div>
+            </div>
           </div>
         </div>
       </main>

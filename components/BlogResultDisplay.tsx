@@ -16,11 +16,16 @@ export default function BlogResultDisplay({
   onContentChange, 
   onSave 
 }: BlogResultDisplayProps) {
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(true) // 默认进入编辑模式
   const [editContent, setEditContent] = useState(content)
   const [highlightedContent, setHighlightedContent] = useState('')
   const [keywordStats, setKeywordStats] = useState<{[key: string]: number}>({})
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // 当内容更新时，同步到编辑内容
+  useEffect(() => {
+    setEditContent(content)
+  }, [content])
 
   // 关键词高亮处理
   useEffect(() => {
